@@ -1,0 +1,23 @@
+{
+  "name": "mcp-server",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node-dev src/index.ts",
+    "test-client": "ts-node src/test-client.ts"
+  },
+  "dependencies": {
+    "@actual-app/api": "^25.7.1",
+    "express": "^4.21.2",
+    "fast-jwt": "^6.0.2",
+    "fastmcp": "^3.10.0",
+    "get-jwks": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.1.0",
+    "ts-node": "^10.0.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.0"
+  }
+}

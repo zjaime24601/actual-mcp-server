@@ -1,0 +1,16 @@
+{
+    "name": "Actual MCP Dev Container",
+    "image": "mcr.microsoft.com/devcontainers/javascript-node",
+    "workspaceFolder": "/workspaces/actual-mcp-server",
+    "forwardPorts": [3000],
+    "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash",
+        "remote.localPortHost": "allInterfaces"
+    },
+    "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next"
+    ],
+    "remoteUser": "root"
+}

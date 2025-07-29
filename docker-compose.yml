@@ -1,0 +1,17 @@
+services:
+  mcp-server:
+    container_name: actual-mcp-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - home-lab-proxy
+    env_file:
+      - ./env/.env
+    expose:
+      - "3000"
+
+
+networks:
+  home-lab-proxy:
+    external: true
