@@ -1,0 +1,151 @@
+import { z } from "zod";
+import { ActualConnection } from "../actual-connection";
+import * as api from "@actual-app/api";
+import { ToolConfig, addCurrencyWarning, convertAmounts, parameters } from "./shared";
+
+
+// List all budgets
+const getBudgets = function (actualConnection: ActualConnection): ToolConfig {
+  return {
+    name: "get_budgets",
+    description: "Get list of all available budget files with raw Actual data",
+    parameters: z.object({}),
+    execute: async () => {
+      await actualConnection.ensureConnection();
+      const budgets = await api.getBudgets();
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(budgets, null, 2),
+          },
+        ],
+      };
+    },
+  };
+};
+
+// Get budget month data
+const getBudgetMonth = function (
+  actualConnection: ActualConnection
+): ToolConfig {
+  return {
+    name: "get_budget_month",
+    description:
+      "Get budget vs actual data for a specific month with all context",
+    parameters: z.object({
+      month: parameters.month("Month"),
+      budgetId: parameters.budgetId(),
+    }),
+    execute: async (args) => {
+      await actualConnection.ensureBudgetLoaded(args.budgetId);
+
+      const [budget, categories, categoryGroups] = await Promise.all([
+        api.getBudgetMonth(args.month),
+        api.getCategories(),
+        api.getCategoryGroups(),
+      ]);
+
+      // Convert budget amounts to decimal
+      const convertedBudget = convertAmounts(budget);
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              addCurrencyWarning({
+                budget: convertedBudget,
+                categories,
+                categoryGroups,
+                month: args.month,
+              }),
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    },
+  };
+};
+
+// Get multiple budget months for trend analysis
+const getBudgetMonths = function (
+  actualConnection: ActualConnection
+): ToolConfig {
+  return {
+    name: "get_budget_months",
+    description: "Get budget data for multiple months for trend analysis",
+    parameters: z.object({
+      startMonth: parameters.month("Start month"),
+      endMonth: parameters.month("End month"),
+      budgetId: parameters.budgetId(),
+    }),
+    execute: async (args) => {
+      await actualConnection.ensureBudgetLoaded(args.budgetId);
+
+      const [categories, categoryGroups] = await Promise.all([
+        api.getCategories(),
+        api.getCategoryGroups(),
+      ]);
+
+      // Generate month list
+      const months = [];
+      const start = new Date(args.startMonth + "-01");
+      const end = new Date(args.endMonth + "-01");
+
+      for (
+        let date = new Date(start);
+        date <= end;
+        date.setMonth(date.getMonth() + 1)
+      ) {
+        months.push(date.toISOString().slice(0, 7));
+      }
+
+      // Get budget data for all months
+      const budgetData: Record<string, any> = {};
+      for (const month of months) {
+        try {
+          const budget = await api.getBudgetMonth(month);
+          budgetData[month] = convertAmounts(budget);
+        } catch (error) {
+          budgetData[month] = null; // Month doesn't exist
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              addCurrencyWarning({
+                budgetData,
+                categories,
+                categoryGroups,
+                months,
+                queryInfo: {
+                  startMonth: args.startMonth,
+                  endMonth: args.endMonth,
+                  monthCount: months.length,
+                },
+              }),
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    },
+  };
+};
+
+export function getBudgetTools(
+  actualConnection: ActualConnection
+): ToolConfig[] {
+  return [
+    getBudgets(actualConnection),
+    getBudgetMonth(actualConnection),
+    getBudgetMonths(actualConnection),
+  ];
+}
