@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EntityContext } from "../context/context";
 
 export const parameters = {
   budgetId: () =>
@@ -61,7 +62,14 @@ export function convertAmounts(obj: any): any {
 export function addCurrencyWarning(data: any) {
   return {
     IMPORTANT_CURRENCY_NOTE:
-      "All amounts are currency-agnostic numbers from Actual Budget. Account names may indicate currency (e.g., 'Barclays GBP', 'Chase USD'). Ask user to specify currencies for accurate financial analysis.",
+      "All amounts from Actual Bduget are currency-agnostic numbers. Unless specidied in stored AI context ask user to specify currencies for accurate financial analysis.",
+    ...data,
+  };
+}
+
+export function withAIContext(data: any, context: EntityContext) {
+  return {
+    AIContext: context.context,
     ...data,
   };
 }

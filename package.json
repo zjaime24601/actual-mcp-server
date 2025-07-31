@@ -12,7 +12,8 @@
     "express": "^4.21.2",
     "fast-jwt": "^6.0.2",
     "fastmcp": "^3.10.0",
-    "get-jwks": "^11.0.1"
+    "get-jwks": "^11.0.1",
+    "mongodb": "^6.18.0"
   },
   "devDependencies": {
     "@types/node": "^24.1.0",

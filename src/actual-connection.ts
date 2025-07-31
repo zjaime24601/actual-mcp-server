@@ -64,6 +64,7 @@ export class ActualConnection {
     } else {
       console.log(`Budget ${this.currentBudgetId} already loaded`);
     }
+    return this.currentBudgetId;
   }
 
   async shutdown() {

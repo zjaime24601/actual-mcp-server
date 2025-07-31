@@ -6,12 +6,33 @@ services:
       dockerfile: Dockerfile
     networks:
       - home-lab-proxy
+      - actual-mcp-internal
     env_file:
       - ./env/.env
     expose:
       - "3000"
+    depends_on:
+      - mongodb
 
+  mongodb:
+    container_name: actual-mcp-mongodb
+    image: mongo:8
+    networks:
+      - actual-mcp-internal
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: actual_context
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  mongodb_data:
 
 networks:
   home-lab-proxy:
     external: true
+  actual-mcp-internal:
+    driver: bridge

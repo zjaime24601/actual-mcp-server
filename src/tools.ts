@@ -4,21 +4,22 @@ import { withErrorHandling } from "./tools/shared";
 import { getBudgetTools } from "./tools/budgets";
 import { getTransactionTools } from "./tools/transactions";
 import { getAccountTools } from "./tools/accounts";
+import { ContextService } from "./context/context";
 
 export function registerTools(
   server: FastMCP,
-  actualConnection: ActualConnection
+  actualConnection: ActualConnection,
+  contextService: ContextService
 ) {
-  // ========================================
-  // RAW DATA EXPOSURE TOOLS WITH ERROR HANDLING
-  // ========================================
   const tools = [
-    ...getAccountTools(actualConnection),
+    ...getAccountTools(actualConnection, contextService),
     ...getBudgetTools(actualConnection),
-    ...getTransactionTools(actualConnection)
+    ...getTransactionTools(actualConnection),
   ];
 
-  tools.forEach(toolConfig => {
+  tools.forEach((toolConfig) => {
     server.addTool(withErrorHandling(toolConfig));
-  })
+  });
+  
+  return tools;
 }

@@ -1,15 +1,13 @@
 import { z } from "zod";
 import { ActualConnection } from "../actual-connection";
 import * as api from "@actual-app/api";
-import {
-  ToolConfig,
-  addCurrencyWarning,
-  parameters,
-} from "./shared";
+import { ToolConfig, addCurrencyWarning, parameters, withAIContext } from "./shared";
+import { ContextService } from "../context/context";
 
 // Get account balance history
 const getAccountBalanceHistory = function (
-  actualConnection: ActualConnection
+  actualConnection: ActualConnection,
+  contextService: ContextService
 ): ToolConfig {
   return {
     name: "get_account_balance_history",
@@ -20,7 +18,7 @@ const getAccountBalanceHistory = function (
       budgetId: parameters.budgetId(),
     }),
     execute: async (args) => {
-      await actualConnection.ensureBudgetLoaded(args.budgetId);
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(args.budgetId);
 
       const account = (await api.getAccounts()).find(
         (acc) => acc.id === args.accountId
@@ -49,13 +47,16 @@ const getAccountBalanceHistory = function (
         });
       }
 
+      const aiContext = await contextService.getContext("account", args.accountId, loadedBudgetId);
+      const aiAccountData = aiContext ? withAIContext(account, aiContext) : account;
+
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
               addCurrencyWarning({
-                account,
+                account: aiAccountData,
                 history,
                 queryInfo: {
                   accountId: args.accountId,
@@ -73,8 +74,60 @@ const getAccountBalanceHistory = function (
   };
 };
 
+const setAccountContext = function (
+  actualConnection: ActualConnection,
+  contextService: ContextService
+): ToolConfig {
+  return {
+    name: "set_account_context",
+    description:
+      "Set supplementary AI context against Account for future reference. Always ask user to confirm data before setting.",
+    parameters: z.object({
+      accountId: z.string().describe("Account ID"),
+      budgetId: parameters.budgetId(),
+      context: z
+        .record(z.any())
+        .describe(
+          "Context data as key-value pairs (e.g., {currency: 'GBP', accountType: 'ISA', notes: 'Emergency fund'})"
+        ),
+    }),
+    execute: async (args) => {
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
+        args.budgetId
+      );
+
+      const account = (await api.getAccounts()).find(
+        (acc) => acc.id === args.accountId
+      );
+      if (!account) {
+        throw new Error(`Account ${args.accountId} not found`);
+      }
+
+      await contextService.setContext(
+        "account",
+        args.accountId,
+        loadedBudgetId,
+        args.context
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Context stored successfully.",
+          },
+        ],
+      };
+    },
+  };
+};
+
 export function getAccountTools(
-  actualConnection: ActualConnection
+  actualConnection: ActualConnection,
+  contextService: ContextService
 ): ToolConfig[] {
-  return [getAccountBalanceHistory(actualConnection)];
+  return [
+    getAccountBalanceHistory(actualConnection, contextService),
+    setAccountContext(actualConnection, contextService),
+  ];
 }
