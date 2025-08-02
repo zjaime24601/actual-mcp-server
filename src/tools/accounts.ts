@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { ActualConnection } from "../actual-connection";
-import * as api from "@actual-app/api";
 import {
   ToolConfig,
   addCurrencyWarning,
@@ -11,7 +10,7 @@ import { ContextService } from "../context/context";
 import {
   getAccounts,
   getAccountBalance,
-  getTransaactions,
+  getTransactions,
 } from "../actual-api";
 
 const getAccountsTool = function (
@@ -81,7 +80,7 @@ const getAccountBalanceHistory = function (
     execute: async (args) => {
       const loadedBudgetId = await actualConnection.ensureBudgetLoaded();
 
-      const account = (await api.getAccounts()).find(
+      const account = (await getAccounts()).find(
         (acc) => acc.id === args.accountId
       );
       if (!account) {
@@ -96,7 +95,7 @@ const getAccountBalanceHistory = function (
       dayBefore.setDate(dayBefore.getDate() - 1);
       let dayBeforeBalance = await getAccountBalance(account.id, dayBefore);
 
-      const transactions = await getTransaactions(
+      const transactions = await getTransactions(
         account.id,
         currentDate,
         endDate
@@ -185,7 +184,7 @@ const setAccountContext = function (
     execute: async (args) => {
       const loadedBudgetId = await actualConnection.ensureBudgetLoaded();
 
-      const account = (await api.getAccounts()).find(
+      const account = (await getAccounts()).find(
         (acc) => acc.id === args.accountId
       );
       if (!account) {
