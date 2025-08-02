@@ -3,28 +3,6 @@ import { ActualConnection } from "../actual-connection";
 import * as api from "@actual-app/api";
 import { ToolConfig, addCurrencyWarning, convertAmounts, parameters } from "./shared";
 
-
-// List all budgets
-const getBudgets = function (actualConnection: ActualConnection): ToolConfig {
-  return {
-    name: "get_budgets",
-    description: "Get list of all available budget files with raw Actual data",
-    parameters: z.object({}),
-    execute: async () => {
-      await actualConnection.ensureConnection();
-      const budgets = await api.getBudgets();
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(budgets, null, 2),
-          },
-        ],
-      };
-    },
-  };
-};
-
 // Get budget month data
 const getBudgetMonth = function (
   actualConnection: ActualConnection
@@ -142,7 +120,6 @@ export function getBudgetTools(
   actualConnection: ActualConnection
 ): ToolConfig[] {
   return [
-    getBudgets(actualConnection),
     getBudgetMonth(actualConnection),
     getBudgetMonths(actualConnection),
   ];
