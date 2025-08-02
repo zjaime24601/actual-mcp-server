@@ -1,8 +1,73 @@
 import { z } from "zod";
 import { ActualConnection } from "../actual-connection";
 import * as api from "@actual-app/api";
-import { ToolConfig, addCurrencyWarning, parameters, withAIContext } from "./shared";
+import {
+  ToolConfig,
+  addCurrencyWarning,
+  parameters,
+  withAIContext,
+} from "./shared";
 import { ContextService } from "../context/context";
+import {
+  getAccounts,
+  getAccountBalance,
+  getTransaactions,
+} from "../actual-api";
+
+const getAccountsTool = function (
+  actualConnection: ActualConnection,
+  contextService: ContextService
+): ToolConfig {
+  return {
+    name: "get_accounts",
+    description: "Get accounts for budget",
+    parameters: z.object({
+      budgetId: parameters.budgetId(),
+    }),
+    execute: async (args) => {
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
+        args.budgetId
+      );
+
+      const accounts = await getAccounts();
+
+      if (!accounts) {
+        throw new Error(`Account ${args.accountId} not found`);
+      }
+
+      const responseAccounts = await Promise.all(
+        accounts.map(async (a) => {
+          const balance = await getAccountBalance(a.id);
+          const mappedAccount = {
+            ...a,
+            currentBalance: balance,
+          };
+          const aiContext = await contextService.getContext(
+            "account",
+            a.id,
+            loadedBudgetId
+          );
+          return aiContext
+            ? withAIContext(mappedAccount, aiContext)
+            : mappedAccount;
+        })
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              addCurrencyWarning({
+                accounts: responseAccounts,
+              })
+            ),
+          },
+        ],
+      };
+    },
+  };
+};
 
 // Get account balance history
 const getAccountBalanceHistory = function (
@@ -14,11 +79,14 @@ const getAccountBalanceHistory = function (
     description: "Get historical account balances for trend analysis",
     parameters: z.object({
       accountId: z.string().describe("Account ID"),
-      months: z.number().default(12).describe("Number of months back to check"),
+      startDate: parameters.date("Start date"),
+      endDate: parameters.date("End date"),
       budgetId: parameters.budgetId(),
     }),
     execute: async (args) => {
-      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(args.budgetId);
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
+        args.budgetId
+      );
 
       const account = (await api.getAccounts()).find(
         (acc) => acc.id === args.accountId
@@ -28,27 +96,52 @@ const getAccountBalanceHistory = function (
       }
 
       const history = [];
-      for (let i = args.months; i >= 0; i--) {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        const monthStr = date.toISOString().slice(0, 7);
-        const lastDayOfMonth = new Date(
-          date.getFullYear(),
-          date.getMonth() + 1,
-          0
+      const endDate = new Date(args.endDate);
+      const startDate = new Date(args.startDate);
+      const currentDate = new Date(startDate);
+      const dayBefore = new Date(currentDate);
+      dayBefore.setDate(dayBefore.getDate() - 1);
+      let dayBeforeBalance = await getAccountBalance(account.id, dayBefore);
+
+      const transactions = await getTransaactions(
+        account.id,
+        currentDate,
+        endDate
+      );
+      const groupedTransactions = Object.groupBy(transactions, (t) => t.date);
+      while (currentDate < endDate) {
+        const currentDayBalance = await getAccountBalance(
+          account.id,
+          currentDate
         );
 
-        const balance =
-          (await api.getAccountBalance(args.accountId, lastDayOfMonth)) / 100;
+        const currentDateStr = currentDate.toISOString().split("T")[0] || "";
+        const currentDayTransactions = groupedTransactions[currentDateStr];
+
+        const positiveDayAmounts =
+          currentDayTransactions?.reduce(
+            (acc, t) => (!!t.amount && t.amount > 0 ? acc + t.amount : acc),
+            0
+          ) || 0;
+
         history.push({
-          month: monthStr,
-          balance,
-          date: lastDayOfMonth.toISOString().split("T")[0],
+          date: currentDateStr,
+          endOfDayBalance: currentDayBalance,
+          theoreticalPeakIntradayBalance: dayBeforeBalance + positiveDayAmounts,
         });
+
+        dayBeforeBalance = currentDayBalance;
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      const aiContext = await contextService.getContext("account", args.accountId, loadedBudgetId);
-      const aiAccountData = aiContext ? withAIContext(account, aiContext) : account;
+      const aiContext = await contextService.getContext(
+        "account",
+        args.accountId,
+        loadedBudgetId
+      );
+      const aiAccountData = aiContext
+        ? withAIContext(account, aiContext)
+        : account;
 
       return {
         content: [
@@ -60,12 +153,18 @@ const getAccountBalanceHistory = function (
                 history,
                 queryInfo: {
                   accountId: args.accountId,
-                  monthsRequested: args.months,
+                  daysRequested: Math.ceil(
+                    (endDate.getTime() - startDate.getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  ),
                   dataPoints: history.length,
                 },
-              }),
-              null,
-              2
+                fieldDefinitions: {
+                  endOfDayBalance: "Actual account balance at end of day",
+                  theoreticalPeakIntradayBalance:
+                    "Previous day's end balance plus current day's positive transactions - useful for FBAR compliance and overdraft analysis. This balance may never have actually existed.",
+                },
+              })
             ),
           },
         ],
@@ -127,6 +226,7 @@ export function getAccountTools(
   contextService: ContextService
 ): ToolConfig[] {
   return [
+    getAccountsTool(actualConnection, contextService),
     getAccountBalanceHistory(actualConnection, contextService),
     setAccountContext(actualConnection, contextService),
   ];
