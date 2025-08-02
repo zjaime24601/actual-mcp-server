@@ -21,13 +21,9 @@ const getAccountsTool = function (
   return {
     name: "get_accounts",
     description: "Get accounts for budget",
-    parameters: z.object({
-      budgetId: parameters.budgetId(),
-    }),
+    parameters: z.object({}),
     execute: async (args) => {
-      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
-        args.budgetId
-      );
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded();
 
       const accounts = await getAccounts();
 
@@ -81,12 +77,9 @@ const getAccountBalanceHistory = function (
       accountId: z.string().describe("Account ID"),
       startDate: parameters.date("Start date"),
       endDate: parameters.date("End date"),
-      budgetId: parameters.budgetId(),
     }),
     execute: async (args) => {
-      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
-        args.budgetId
-      );
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded();
 
       const account = (await api.getAccounts()).find(
         (acc) => acc.id === args.accountId
@@ -183,7 +176,6 @@ const setAccountContext = function (
       "Set supplementary AI context against Account for future reference. Always ask user to confirm data before setting.",
     parameters: z.object({
       accountId: z.string().describe("Account ID"),
-      budgetId: parameters.budgetId(),
       context: z
         .record(z.any())
         .describe(
@@ -191,9 +183,7 @@ const setAccountContext = function (
         ),
     }),
     execute: async (args) => {
-      const loadedBudgetId = await actualConnection.ensureBudgetLoaded(
-        args.budgetId
-      );
+      const loadedBudgetId = await actualConnection.ensureBudgetLoaded();
 
       const account = (await api.getAccounts()).find(
         (acc) => acc.id === args.accountId

@@ -35,10 +35,9 @@ const getBudgetMonth = function (
       "Get budget vs actual data for a specific month with all context",
     parameters: z.object({
       month: parameters.month("Month"),
-      budgetId: parameters.budgetId(),
     }),
     execute: async (args) => {
-      await actualConnection.ensureBudgetLoaded(args.budgetId);
+      await actualConnection.ensureBudgetLoaded();
 
       const [budget, categories, categoryGroups] = await Promise.all([
         api.getBudgetMonth(args.month),
@@ -80,10 +79,9 @@ const getBudgetMonths = function (
     parameters: z.object({
       startMonth: parameters.month("Start month"),
       endMonth: parameters.month("End month"),
-      budgetId: parameters.budgetId(),
     }),
     execute: async (args) => {
-      await actualConnection.ensureBudgetLoaded(args.budgetId);
+      await actualConnection.ensureBudgetLoaded();
 
       const [categories, categoryGroups] = await Promise.all([
         api.getCategories(),

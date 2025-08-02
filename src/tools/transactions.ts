@@ -12,14 +12,16 @@ const getTransactions = function (actualConnection: ActualConnection): ToolConfi
         parameters: z.object({
           startDate: parameters.date("Start date"),
           endDate: parameters.date("End date"),
+          limit: z.number()
+          .optional()
+          .describe("Maximum number of transactions to be returned. Useful for determining if there was any account activity in a given time period."),
           accountId: z
             .string()
             .optional()
             .describe("Specific account ID (gets all accounts if not specified)"),
-          budgetId: parameters.budgetId(),
         }),
         execute: async (args) => {
-          await actualConnection.ensureBudgetLoaded(args.budgetId);
+          await actualConnection.ensureBudgetLoaded();
   
           const [accounts, categories, categoryGroups, payees] =
             await Promise.all([

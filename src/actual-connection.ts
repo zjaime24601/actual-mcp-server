@@ -35,11 +35,11 @@ export class ActualConnection {
     }
   }
 
-  async ensureBudgetLoaded(budgetId?: string) {
+  async ensureBudgetLoaded() {
     await this.ensureConnection();
 
     // Use provided budgetId, or fall back to environment variable
-    const targetBudgetId = budgetId || process.env.ACTUAL_BUDGET_ID;
+    const targetBudgetId = process.env.ACTUAL_BUDGET_ID;
 
     if (!targetBudgetId) {
       throw new Error(
