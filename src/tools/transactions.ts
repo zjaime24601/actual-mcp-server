@@ -7,6 +7,7 @@ import {
   parameters,
 } from "./shared";
 import {
+  integerToAmount,
   getAccounts,
   getTransactions,
   getCategories,
@@ -33,6 +34,7 @@ const mapResponseTransaction = function (
     category: actualTransaction.category
       ? categoryMap[actualTransaction.category]?.name
       : null,
+    amount: integerToAmount(actualTransaction.amount),
     notes: actualTransaction.notes,
     isCleared: actualTransaction.cleared,
     subtransactions: actualTransaction?.subtransactions?.map((t) =>

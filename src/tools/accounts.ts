@@ -8,6 +8,7 @@ import {
 } from "./shared";
 import { ContextService } from "../context/context";
 import {
+  integerToAmount,
   getAccounts,
   getAccountBalance,
   getTransactions,
@@ -35,7 +36,7 @@ const getAccountsTool = function (
           const balance = await getAccountBalance(a.id);
           const mappedAccount = {
             ...a,
-            currentBalance: balance,
+            currentBalance: integerToAmount(balance),
           };
           const aiContext = await contextService.getContext(
             "account",
@@ -118,8 +119,8 @@ const getAccountBalanceHistory = function (
 
         history.push({
           date: currentDateStr,
-          endOfDayBalance: currentDayBalance,
-          theoreticalPeakIntradayBalance: dayBeforeBalance + positiveDayAmounts,
+          endOfDayBalance: integerToAmount(currentDayBalance),
+          theoreticalPeakIntradayBalance: integerToAmount(dayBeforeBalance + positiveDayAmounts),
         });
 
         dayBeforeBalance = currentDayBalance;
