@@ -62,7 +62,7 @@ export function convertAmounts(obj: any): any {
 export function addCurrencyWarning(data: any) {
   return {
     IMPORTANT_CURRENCY_NOTE:
-      "All amounts from Actual Bduget are currency-agnostic numbers. Unless specidied in stored AI context ask user to specify currencies for accurate financial analysis.",
+      "All amounts from Actual Bduget are currency-agnostic numbers. Unless specified in stored AI context ask user to specify currencies for accurate financial analysis.",
     ...data,
   };
 }

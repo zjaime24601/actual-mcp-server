@@ -3,7 +3,6 @@ import { ActualConnection } from "../actual-connection";
 import {
   ToolConfig,
   addCurrencyWarning,
-  convertAmounts,
   parameters,
 } from "./shared";
 import {
@@ -109,9 +108,7 @@ const getTransactionsTool = function (
         ),
       ]);
 
-      const responseTransactions = convertAmounts(
-        requestedTransactions.map((t) => mapResponseTransaction(t, categories, payees))
-      );
+      const responseTransactions = requestedTransactions.map((t) => mapResponseTransaction(t, categories, payees));;
       // Filter accounts to only include those with transactions in the response
       const relevantAccountIds = new Set(requestedTransactions.map(t => t.account));
       const relevantAccounts = accounts.filter(acc => relevantAccountIds.has(acc.id));
