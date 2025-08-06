@@ -31,6 +31,11 @@ const getAccountsTool = function (
         throw new Error(`Account ${args.accountId} not found`);
       }
 
+      const ownerContext = await contextService.getContext(
+        "owner",
+        "owner",
+        loadedBudgetId
+      );
       const responseAccounts = await Promise.all(
         accounts.map(async (a) => {
           const balance = await getAccountBalance(a.id);
@@ -49,14 +54,19 @@ const getAccountsTool = function (
         })
       );
 
+      const response = ownerContext ? {
+        ownerContext: ownerContext,
+        accounts: responseAccounts
+      } : {
+        accounts: responseAccounts
+      }
+
       return {
         content: [
           {
             type: "text",
             text: JSON.stringify(
-              addCurrencyWarning({
-                accounts: responseAccounts,
-              })
+              addCurrencyWarning(response)
             ),
           },
         ],

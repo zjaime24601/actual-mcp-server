@@ -5,6 +5,7 @@ import { getBudgetTools } from "./tools/budgets";
 import { getTransactionTools } from "./tools/transactions";
 import { getAccountTools } from "./tools/accounts";
 import { ContextService } from "./context/context";
+import { getOwnerTools } from "./tools/owner";
 
 export function registerTools(
   server: FastMCP,
@@ -12,6 +13,7 @@ export function registerTools(
   contextService: ContextService
 ) {
   const tools = [
+    ...getOwnerTools(actualConnection, contextService),
     ...getAccountTools(actualConnection, contextService),
     ...getBudgetTools(actualConnection),
     ...getTransactionTools(actualConnection),
