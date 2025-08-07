@@ -1,10 +1,6 @@
 import { z } from "zod";
 import { ActualConnection } from "../actual-connection";
-import {
-  ToolConfig,
-  addCurrencyWarning,
-  parameters,
-} from "./shared";
+import { ToolConfig, addCurrencyWarning, parameters } from "./shared";
 import {
   integerToAmount,
   getAccounts,
@@ -48,8 +44,7 @@ const getTransactionsTool = function (
   const getTransactionsSchema = z.object({
     startDate: parameters.date("Start date"),
     endDate: parameters.date("End date"),
-    limit: z
-      .coerce
+    limit: z.coerce
       .number()
       .optional()
       .describe(
@@ -59,6 +54,10 @@ const getTransactionsTool = function (
       .string()
       .optional()
       .describe("Specific account ID (gets all accounts if not specified)"),
+    categoryIds: z
+      .array(z.string())
+      .optional()
+      .describe("List of category IDs to get transactions for"),
   });
 
   type GetTransactionsArgs = z.infer<typeof getTransactionsSchema>;
@@ -79,10 +78,18 @@ const getTransactionsTool = function (
         : accounts;
       const accountTransactions = (
         await Promise.all(
-          targetAccounts.map(
-            async (account) =>
-              await getTransactions(account.id, startDate, endDate)
-          )
+          targetAccounts.map(async (account) => {
+            const transactions = await getTransactions(
+              account.id,
+              startDate,
+              endDate
+            );
+            return !!args.categoryIds
+              ? transactions.filter(
+                  (t) => !!t.category && args.categoryIds?.includes(t.category)
+                )
+              : transactions;
+          })
         )
       )
         .flat()
@@ -108,10 +115,16 @@ const getTransactionsTool = function (
         ),
       ]);
 
-      const responseTransactions = requestedTransactions.map((t) => mapResponseTransaction(t, categories, payees));;
+      const responseTransactions = requestedTransactions.map((t) =>
+        mapResponseTransaction(t, categories, payees)
+      );
       // Filter accounts to only include those with transactions in the response
-      const relevantAccountIds = new Set(requestedTransactions.map(t => t.account));
-      const relevantAccounts = accounts.filter(acc => relevantAccountIds.has(acc.id));
+      const relevantAccountIds = new Set(
+        requestedTransactions.map((t) => t.account)
+      );
+      const relevantAccounts = accounts.filter((acc) =>
+        relevantAccountIds.has(acc.id)
+      );
 
       return {
         content: [
