@@ -26,3 +26,32 @@ export async function getPayees(): Promise<APIPayeeEntity[]> {
 export async function getCategories(): Promise<APICategoryEntity[]> {
   return api.getCategories();
 };
+
+export async function getBudgetMonth(month: any): Promise<{
+    month: string;
+    incomeAvailable: number;
+    lastMonthOverspent: number;
+    forNextMonth: number;
+    totalBudgeted: number;
+    toBudget: number;
+    fromLastMonth: number;
+    totalIncome: number;
+    totalSpent: number;
+    totalBalance: number;
+    categoryGroups: any[];
+}> {
+  var rawResponse = await api.getBudgetMonth(month);
+  return {
+    month: rawResponse.month,
+    incomeAvailable: rawResponse.incomeAvailable,
+    lastMonthOverspent: rawResponse.lastMonthOverspent,
+    forNextMonth: rawResponse.forNextMonth,
+    totalBudgeted: rawResponse.totalBudgeted,
+    toBudget: rawResponse.toBudget,
+    fromLastMonth: rawResponse.fromLastMonth,
+    totalIncome: rawResponse.totalIncome,
+    totalSpent: rawResponse.totalSpent,
+    totalBalance: rawResponse.totalBalance,
+    categoryGroups: rawResponse.categoryGroups as any[],
+  };
+}

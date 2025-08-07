@@ -2,6 +2,31 @@ import { z } from "zod";
 import { ContextService } from "../context/context";
 import { ToolConfig } from "./shared";
 import { ActualConnection } from "../actual-connection";
+import * as api from "@actual-app/api";
+
+const syncData = function (
+  actualConnection: ActualConnection,
+): ToolConfig {
+  return {
+    name: "sync_data_context",
+    description:
+      "Sync budget data to make sure most recent data is presented in tooling",
+    parameters: z.object({}),
+    execute: async () => {
+      await actualConnection.ensureBudgetLoaded();
+      await api.sync();
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: "Data synced successfully.",
+          },
+        ],
+      };
+    },
+  };
+}
 
 const getOwnerContext = function (
   actualConnection: ActualConnection,
@@ -75,6 +100,7 @@ export function getOwnerTools(
   contextService: ContextService
 ): ToolConfig[] {
   return [
+    syncData(actualConnection),
     getOwnerContext(actualConnection, contextService),
     setOwnerContext(actualConnection, contextService),
   ];
