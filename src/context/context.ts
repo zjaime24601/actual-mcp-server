@@ -1,4 +1,4 @@
-export type EntityType = 'account' | 'budget' | 'transaction' | 'category';
+export type EntityType = 'owner' | 'account' | 'budget' | 'transaction' | 'category';
 
 export interface EntityContext {
   _id?: string;
@@ -27,7 +27,7 @@ export interface ContextService {
    * @returns The created or updated context document
    */
   setContext(
-    entityType: string,
+    entityType: EntityType,
     entityId: string,
     budgetId: string,
     context: Record<string, any>
@@ -41,7 +41,7 @@ export interface ContextService {
    * @returns The context document or null if not found
    */
   getContext(
-    entityType: string,
+    entityType: EntityType,
     entityId: string,
     budgetId: string
   ): Promise<EntityContext | null>;

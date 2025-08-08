@@ -15,7 +15,7 @@ export function registerTools(
   const tools = [
     ...getOwnerTools(actualConnection, contextService),
     ...getAccountTools(actualConnection, contextService),
-    ...getBudgetTools(actualConnection),
+    ...getBudgetTools(actualConnection, contextService),
     ...getTransactionTools(actualConnection),
   ];
 
